@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, UTC
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database.database import Base
@@ -12,8 +12,8 @@ class User(Base):
 	fullname: Mapped[str | None]
 	phone_number: Mapped[str | None]
 	locale: Mapped[str | None]
-	created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now())
+	created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(UTC).replace(tzinfo=None))
 	registered_at: Mapped[datetime | None]
-	last_activity: Mapped[datetime] = mapped_column(default=lambda: datetime.now())
+	last_activity: Mapped[datetime] = mapped_column(default=lambda: datetime.now(UTC).replace(tzinfo=None))
 
 	
