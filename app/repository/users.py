@@ -36,18 +36,20 @@ async def upsert_user(
 async def set_phone_once(
 	session: AsyncSession,
 	tg_id: int,
-	phone_number: str) -> bool:
+	phone_number: str,
+	registered_at: datetime) -> bool:
 
 	statement = update(User).where(
 		User.tg_id == tg_id,
 		User.registered_at.is_(None)
 	).values(
 		phone_number=phone_number,
-		registered_at=datetime.now(UTC).replace(tzinfo=None),
-		last_activity=datetime.now(UTC).replace(tzinfo=None)
+		registered_at=registered_at,
+		last_activity=registered_at
 	).returning(User.id)
 
 	result = await session.execute(statement)
 
-	updated_id = result.scalar_one_or_none()
-	return updated_id is not None
+	success = result.scalar_one_or_none()
+
+	return success is not None

@@ -6,8 +6,8 @@ from aiogram import Bot, Dispatcher
 from app.database.database import close_db, init_db
 from app.handlers.start import router as start_router
 from app.handlers.contact import router as contact_router
+from app.services.scheduler import run_scheduler
 from app.settings import BOT_TOKEN, load_funnel_config
-from app.database import models
 
 
 async def main() -> None:
@@ -19,11 +19,18 @@ async def main() -> None:
         funnel_config = await asyncio.to_thread(load_funnel_config)
     
         logging.basicConfig(level=logging.INFO)
-        bot = Bot(token=BOT_TOKEN)
-        dispatcher = Dispatcher()
-        dispatcher.include_routers(start_router, contact_router)
-        dispatcher["funnel_config"] = funnel_config
-        await dispatcher.start_polling(bot)
+        async with Bot(token=BOT_TOKEN) as bot:
+            dispatcher = Dispatcher()
+            dispatcher.include_routers(start_router, contact_router)
+            dispatcher["funnel_config"] = funnel_config
+
+            async with asyncio.TaskGroup() as group:
+                scheduler_task = group.create_task(run_scheduler(bot))
+
+                try:
+                    await dispatcher.start_polling(bot, close_bot_session=False)
+                finally:
+                    scheduler_task.cancel()
     finally:
         await close_db()
 

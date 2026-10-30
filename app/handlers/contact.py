@@ -13,11 +13,14 @@ async def handle_contact(message: Message, funnel_config: dict) -> None:
 	telegram_user = message.from_user
 	contact = message.contact
 
+	if telegram_user is None or contact is None:
+		return
+
 	if contact.user_id != telegram_user.id:
 		await message.answer(funnel_config["messages"]["invalid_contact"])
 		return
 
-	success_registeration = await register_contact(telegram_user, contact)
+	success_registeration = await register_contact(telegram_user, contact, funnel_config["steps"])
 
 	reply_markup=ReplyKeyboardRemove()
 
