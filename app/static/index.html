@@ -1,0 +1,97 @@
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Статистика воронки</title>
+	<script src="https://telegram.org/js/telegram-web-app.js?64"></script>
+</head>
+
+<body>
+	<h1>Статистика воронки</h1>
+
+	<p>Пользователи: <strong id="total_users">—</strong></p>
+	<p>Регистрации: <strong id="registered_users">—</strong></p>
+	<p>Конверсия регистрации: <strong id="users_conversion">—</strong></p>
+
+	<p>Ожидают отправки: <strong id="pending_messages">—</strong></p>
+	<p>Отправлено: <strong id="sent_messages">—</strong></p>
+	<p>Ошибки: <strong id="failed_messages">—</strong></p>
+	<p>Успешность отправок: <strong id="msg_conversion">—</strong></p>
+
+	<button id="refresh" type="button">Обновить</button>
+	<p id="status" role="status" aria-live="polite"></p>
+
+	<script>
+		const fields = [
+			"total_users",
+			"registered_users",
+			"users_conversion",
+			"pending_messages",
+			"sent_messages",
+			"failed_messages",
+			"msg_conversion",
+		];
+
+		const button = document.getElementById("refresh");
+		const status = document.getElementById("status");
+
+		async function loadStats() {
+			button.disabled = true;
+			status.textContent = "Загрузка…";
+
+			try {
+				const telegram = window.Telegram?.WebApp;
+				const initData = telegram?.initData;
+
+				if (!initData) {
+					throw new Error("Откройте дашборд через меню бота в Telegram");
+				}
+
+				const response = await fetch("/api/stats", {
+					cache: "no-store",
+					headers: {
+						"X-Telegram-Init-Data": initData,
+					},
+				});
+
+				if (!response.ok) {
+					throw new Error(`Ошибка HTTP: ${response.status}`);
+				}
+
+				const data = await response.json();
+
+				for (const field of fields) {
+					if (data[field] === undefined) {
+						throw new Error(`В ответе отсутствует поле ${field}`);
+					}
+
+					let value = data[field];
+
+					if (value === null) {
+						value = "—";
+					} else if (field.endsWith("_conversion")) {
+						value = `${value}%`;
+					}
+
+					document.getElementById(field).textContent = String(value);
+				}
+
+				status.textContent = `Обновлено: ${new Date().toLocaleTimeString()}`;
+			} catch (error) {
+				status.textContent = `Не удалось обновить данные: ${error.message}`;
+			} finally {
+				button.disabled = false;
+			}
+		}
+
+		button.addEventListener("click", loadStats);
+
+		const telegramApp = window.Telegram?.WebApp;
+
+		if (telegramApp?.initData) {
+			telegramApp.ready();
+		}
+
+		button.addEventListener("click", loadStats);
+		loadStats();
+	</script>
+</body>

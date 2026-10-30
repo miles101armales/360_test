@@ -12,6 +12,11 @@ load_dotenv(BASE_DIR / ".env")
 
 BOT_TOKEN = os.getenv("BOT_TOKEN", "").strip()
 DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
+ADMIN_IDS = {
+	int(value.strip())
+	for value in os.getenv("ADMIN_IDS", "").split(",")
+	if value.strip()
+}
 
 def load_funnel_config() -> dict:
 	
